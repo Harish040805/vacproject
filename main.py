@@ -9,12 +9,10 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 from xgboost import XGBClassifier
 import streamlit as st
-
 st.title("🫁 Thyroid Prediction App")
 st.write(" ")
 st.write(" ")
 st.write("🌐 Welcome to the application! Thyroid Prediction App developed using Python and Deployed using GitHub and Streamlit!")
-st.write(" ")
 st.write(" ")
 st.write(" ")
 st.subheader("📊 Model Performance and Dataset Trends")
