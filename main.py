@@ -12,6 +12,13 @@ import streamlit as st
 
 st.title("🫁 Thyroid Prediction App")
 st.write("🌐 Welcome to the application! Thyroid Prediction App developed using Python and Deployed using GitHub and Streamlit!")
+st.write(" ")
+st.write(" ")
+st.write(" ")
+st.write(" ")
+st.write(" ")
+st.write("💻 Developed by Harish.R")
+
 def run_thyroid_pipeline(df):
     X = df.drop(columns=['thyroid_class'])
     y = df['thyroid_class']
