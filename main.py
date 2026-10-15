@@ -23,6 +23,8 @@ st.write("⚡ Gradient Boosting Accuracy")
 st.subheader("100.0%")
 st.write(" ")
 st.write(" ")
+st.image("thyroid_banner.png", caption="Thyroid Health Overview", use_container_width=True)
+st.write(" ")
 st.write(" ")
 st.subheader("💻 Developed by Harish.R")
 
