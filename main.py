@@ -8,6 +8,10 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 from xgboost import XGBClassifier
+import streamlit as st
+
+st.title("🫁 Thyroid Prediction App")
+st.write("🌐 Welcome to the application! Thyroid Prediction App developed using Python and Deployed using GitHub and Streamlit!")
 def run_thyroid_pipeline(df):
     X = df.drop(columns=['thyroid_class'])
     y = df['thyroid_class']
