@@ -19,7 +19,7 @@ st.write(" ")
 st.write(" ")
 st.write(" ")
 st.write(" ")
-st.title("💻 Developed by Harish.R")
+st.subheader("💻 Developed by Harish.R")
 
 def run_thyroid_pipeline(df):
     X = df.drop(columns=['thyroid_class'])
