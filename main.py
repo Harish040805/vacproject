@@ -159,7 +159,7 @@ ax2.set_title("Age vs. TSH")
 ax2.legend(title="Thyroid Class")
 c2.pyplot(fig2)
 st.divider()
-st.subheader("🔵 Patient Records Over Time")
+st.subheader("🗃️ Patient Records Over Time")
 hist = load_records()
 if hist.empty:
     st.info("No records yet. Click Predict Thyroid Risk to save the first record.")
