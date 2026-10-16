@@ -73,7 +73,7 @@ def train_models():
     X = df[FEATURES]
     strat = y if np.bincount(y).min() > 1 else None
     X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.2, random_state=42, stratify=strat)
-        sw = compute_sample_weight("balanced", y_tr)
+    sw = compute_sample_weight("balanced", y_tr)
     models = {
         "Decision Tree": DecisionTreeClassifier(max_depth=8, class_weight="balanced", random_state=42),
         "Random Forest": RandomForestClassifier(n_estimators=300, class_weight="balanced", random_state=42, n_jobs=-1),
