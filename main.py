@@ -133,10 +133,7 @@ if bt:
     pred = gb.predict(row)[0]
     label = le.inverse_transform([pred])[0]
     conf = gb.predict_proba(row)[0].max() * 100
-    save_record((
-        datetime.now(ZoneInfo("Asia/Kolkata")).strftime("%Y-%m-%d %H:%M:%S"),
-        ag, sx, ts, t3, tt, tu, ft, ot, tsu, pr, str(label), float(conf),
-    ))
+    save_record((datetime.now(ZoneInfo("Asia/Kolkata")).strftime("%Y-%m-%d %H:%M:%S"), ag, sx, ts, t3, tt, tu, ft, ot, tsu, pr, str(label), float(conf)))
     if str(label).lower() in ("negative", "normal", "0"):
         st.success(f"✅ Low Risk: No thyroid abnormality detected. Confidence: {conf:.1f}%")
     else:
