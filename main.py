@@ -73,13 +73,6 @@ def train_models():
     return df, le, gb, acc
 df, le, gb, acc = train_models()
 st.sidebar.header("Patient Input Features")
-def get_slider_color(val, low, high):
-    if val < low:
-        return "#2c7bb6"  # Blue for Low
-    elif val > high:
-        return "#d7191c"  # Red for High
-    return "#1a9641"      # Green for Normal
-
 ag = st.sidebar.slider("Patient Age", 1, 120, 20)
 sx = st.sidebar.selectbox("Gender", ["Male", "Female"])
 ts = st.sidebar.slider("Thyroid Stimulating Hormone (TSH)", 0.0, 500.0, 1.0)
