@@ -194,11 +194,6 @@ if bt:
         else:
             cols_ind[i].metric(k, round(v, 2), "Normal", delta_color="off")
     st.dataframe(pd.DataFrame({"Class": le.classes_, "Probability (%)": mdl.predict_proba(row)[0] * 100}), use_container_width=True)
-with st.expander("Dataset check"):
-    st.write(df[COL["target"]].value_counts())
-    st.write(df[NUM].describe())
-    st.write((df["TT4"] / df["T4U"] - df["FTI"]).abs().describe())
-    st.write(df.groupby(COL["target"])[["TSH", "T3", "TT4", "T4U", "FTI"]].mean())
 st.divider()
 st.subheader("📊 Model Performance & Dataset Trends")
 st.markdown("### Feature Correlation Heatmap")
