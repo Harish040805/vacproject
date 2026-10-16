@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import sqlite3
+from datetime import datetime
 import streamlit as st
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
@@ -25,6 +27,27 @@ COL = {
 NUM = [COL[k] for k in ["age", "tsh", "t3", "tt4", "t4u", "fti"]]
 BIN = {COL["sex"]: "Male", COL["thyroxine"]: "True", COL["surgery"]: "True", COL["pregnant"]: "True"}
 FEATURES = NUM + list(BIN)
+DB_PATH = "predictions.db"
+def init_db():
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS predictions ("
+            "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+            "created_at TEXT, age REAL, sex TEXT, tsh REAL, t3 REAL, tt4 REAL, t4u REAL, fti REAL, "
+            "on_thyroxine TEXT, thyroid_surgery TEXT, pregnant TEXT, prediction TEXT, confidence REAL)"
+        )
+def save_record(rec):
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute(
+            "INSERT INTO predictions (created_at, age, sex, tsh, t3, tt4, t4u, fti, "
+            "on_thyroxine, thyroid_surgery, pregnant, prediction, confidence) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            rec,
+        )
+def load_records():
+    with sqlite3.connect(DB_PATH) as conn:
+        return pd.read_sql_query("SELECT * FROM predictions ORDER BY created_at", conn)
+init_db()
 @st.cache_resource
 def train_models():
     df = pd.read_csv("thyroid_dataset.csv")
@@ -87,6 +110,10 @@ if bt:
     pred = gb.predict(row)[0]
     label = le.inverse_transform([pred])[0]
     conf = gb.predict_proba(row)[0].max() * 100
+    save_record((
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        ag, sx, ts, t3, tt, tu, ft, ot, tsu, pr, str(label), float(conf),
+    ))
     if str(label).lower() in ("negative", "normal", "0"):
         st.success(f"✅ Low Risk: No thyroid abnormality detected. Confidence: {conf:.1f}%")
     else:
@@ -119,6 +146,22 @@ ax2.set_ylabel("TSH")
 ax2.set_title("Age vs. TSH")
 ax2.legend(title="Thyroid Class")
 c2.pyplot(fig2)
+st.divider()
+st.subheader("🔵 Patient Records Over Time")
+hist = load_records()
+if hist.empty:
+    st.info("No records yet. Click Predict Thyroid Risk to save the first record.")
+else:
+    hist["created_at"] = pd.to_datetime(hist["created_at"])
+    param = st.selectbox("Select parameter to visualize", ["tsh", "t3", "tt4", "t4u", "fti", "age", "confidence"])
+    figh, axh = plt.subplots(figsize=(10, 4))
+    axh.plot(hist["created_at"], hist[param], marker="o")
+    axh.set_xlabel("Time")
+    axh.set_ylabel(param.upper())
+    axh.set_title(f"{param.upper()} over time")
+    figh.autofmt_xdate()
+    st.pyplot(figh)
+    st.dataframe(hist.sort_values("created_at", ascending=False), use_container_width=True)
 st.divider()
 st.write(" ")
 st.subheader("💻 Developed by Harish.R")
