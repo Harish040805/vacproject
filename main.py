@@ -11,8 +11,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import accuracy_score, f1_score
 from sklearn.utils.class_weight import compute_sample_weight
-from sklearn.metrics import accuracy_score, f1_score
-from sklearn.utils.class_weight import compute_sample_weight
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
@@ -104,18 +102,22 @@ def meter(val, low, high):
         f'<div style="width:{pct}%;background:{color};height:8px;border-radius:6px;"></div></div>',
         unsafe_allow_html=True,
     )
+model_name = st.sidebar.selectbox("Algorithm", list(fitted))
+mdl = fitted[model_name]
+rg = {c: (float(df[c].min()), float(df[c].max()), float(df[c].median())) for c in NUM}
 st.sidebar.header("Patient Input Features")
-ag = st.sidebar.slider("Patient Age", 1, 120, 20)
+ag = st.sidebar.slider("Patient Age", int(rg["age"][0]), int(rg["age"][1]), int(rg["age"][2]))
 sx = st.sidebar.selectbox("Gender", ["Male", "Female"])
-ts = st.sidebar.slider("Thyroid Stimulating Hormone (TSH)", 0.0, 500.0, 1.0)
+ts = st.sidebar.slider("Thyroid Stimulating Hormone (TSH)", rg["TSH"][0], rg["TSH"][1], rg["TSH"][2], step=0.1)
 meter(ts, 0.4, 4.0)
-t3 = st.sidebar.slider("Triiodothyronine (T3)", 0.0, 20.0, 2.0)
+t3 = st.sidebar.slider("Triiodothyronine (T3)", rg["T3"][0], rg["T3"][1], rg["T3"][2], step=0.1)
 meter(t3, 1.2, 3.1)
-tt = st.sidebar.slider("Total Thyroxine (TT4)", 0.0, 500.0, 100.0)
+tt = st.sidebar.slider("Total Thyroxine (TT4)", rg["TT4"][0], rg["TT4"][1], rg["TT4"][2], step=1.0)
 meter(tt, 64.0, 154.0)
-tu = st.sidebar.slider("Thyroxine Uptake (T4U)", 0.0, 5.0, 1.0)
+tu = st.sidebar.slider("Thyroxine Uptake (T4U)", rg["T4U"][0], rg["T4U"][1], rg["T4U"][2], step=0.01)
 meter(tu, 0.74, 1.32)
-ft = st.sidebar.slider("Free Thyroxine Index (FTI)", 0.0, 500.0, 100.0)
+ft = tt / tu
+st.sidebar.metric("Free Thyroxine Index (FTI) = TT4 / T4U", f"{ft:.1f}")
 meter(ft, 65.0, 145.0)
 ot = st.sidebar.selectbox("On Thyroxine", ["False", "True"])
 tsu = st.sidebar.selectbox("Thyroid Surgery", ["False", "True"])
@@ -150,9 +152,9 @@ if bt:
         COL["pregnant"]: int(pr == "True"),
     }
     row = pd.DataFrame([vals])[FEATURES]
-    pred = gb.predict(row)[0]
+    pred = mdl.predict(row)[0]
     label = le.inverse_transform([pred])[0]
-    conf = gb.predict_proba(row)[0].max() * 100
+    conf = mdl.predict_proba(row)[0].max() * 100
     save_record((datetime.now(ZoneInfo("Asia/Kolkata")).strftime("%Y-%m-%d %H:%M:%S"), ag, sx, ts, t3, tt, tu, ft, ot, tsu, pr, str(label), float(conf)))
     out = [c for c in NUM if not (df[c].min() <= row[c].iloc[0] <= df[c].max())]
     if out:
@@ -180,7 +182,7 @@ if bt:
             cols_ind[i].metric(k, v, "+High", delta_color="inverse")
         else:
             cols_ind[i].metric(k, v, "Normal", delta_color="off")
-    st.dataframe(pd.DataFrame({"Class": le.classes_, "Probability (%)": gb.predict_proba(row)[0] * 100}), use_container_width=True)
+    st.dataframe(pd.DataFrame({"Class": le.classes_, "Probability (%)": mdl.predict_proba(row)[0] * 100}), use_container_width=True)
 with st.expander("Dataset check"):
     st.write(df[COL["target"]].value_counts())
 st.divider()
@@ -194,12 +196,12 @@ plt.xticks(rotation=45, ha="right")
 plt.yticks(rotation=0)
 fig.tight_layout()
 st.pyplot(fig)
-m1, m2 = st.columns(2)
-m1.metric("Decision Tree Accuracy", f"{acc['Decision Tree']:.1f}%")
-m2.metric("Gradient Boosting Accuracy", f"{acc['Gradient Boosting']:.1f}%")
+for mc, n in zip(st.columns(len(acc)), acc):
+    mc.metric(n, f"Acc {acc[n]:.1f}%", f"Macro F1 {f1[n]:.1f}%", delta_color="off")
 c1, c2 = st.columns(2)
 fig1, ax1 = plt.subplots()
-ax1.bar(list(acc.keys()), list(acc.values()), color=["#92c5de", "#e8867c"])
+ax1.bar(list(acc.keys()), list(acc.values()), color=["#92c5de", "#e8867c", "#a6d96a", "#fdae61"])
+plt.setp(ax1.get_xticklabels(), rotation=20, ha="right")
 ax1.set_ylim(0, 100)
 ax1.set_ylabel("Accuracy (%)")
 ax1.set_title("Model Accuracy Comparison")
