@@ -22,7 +22,7 @@ COL = {
     "target": "thyroid_class",
 }
 NUM = [COL[k] for k in ["age", "tsh", "t3", "tt4", "t4u", "fti"]]
-BIN = {COL["sex"]: "M", COL["thyroxine"]: "t", COL["surgery"]: "t", COL["pregnant"]: "t"}
+BIN = {COL["sex"]: "Male", COL["thyroxine"]: "True", COL["surgery"]: "True", COL["pregnant"]: "True"}
 FEATURES = NUM + list(BIN)
 @st.cache_resource
 def train_models():
@@ -48,15 +48,15 @@ def train_models():
 df, le, gb, acc = train_models()
 st.sidebar.header("Patient Input Features")
 ag = st.sidebar.slider("Patient Age", 1, 120, 30)
-sx = st.sidebar.selectbox("Sex", ["M", "F"])
+sx = st.sidebar.selectbox("Sex", ["Male", "Female"])
 ts = st.sidebar.slider("TSH", 0.0, 500.0, 1.0)
 t3 = st.sidebar.slider("T3", 0.0, 20.0, 2.0)
 tt = st.sidebar.slider("TT4", 0.0, 500.0, 100.0)
 tu = st.sidebar.slider("T4U", 0.0, 5.0, 1.0)
 ft = st.sidebar.slider("FTI", 0.0, 500.0, 100.0)
-ot = st.sidebar.selectbox("On Thyroxine", ["f", "t"])
-tsu = st.sidebar.selectbox("Thyroid Surgery", ["f", "t"])
-pr = st.sidebar.selectbox("Pregnant", ["f", "t"])
+ot = st.sidebar.selectbox("On Thyroxine", ["False", "True"])
+tsu = st.sidebar.selectbox("Thyroid Surgery", ["False", "True"])
+pr = st.sidebar.selectbox("Pregnant", ["False", "True"])
 bt = st.sidebar.button("Predict Thyroid Risk")
 st.title("🫁 Thyroid Prediction App")
 st.write("Use machine learning to estimate a patient's risk of thyroid abnormalities.")
@@ -69,10 +69,10 @@ if bt:
         COL["tt4"]: tt,
         COL["t4u"]: tu,
         COL["fti"]: ft,
-        COL["sex"]: int(sx == "M"),
-        COL["thyroxine"]: int(ot == "t"),
-        COL["surgery"]: int(tsu == "t"),
-        COL["pregnant"]: int(pr == "t"),
+        COL["sex"]: int(sx == "Male"),
+        COL["thyroxine"]: int(ot == "True"),
+        COL["surgery"]: int(tsu == "True"),
+        COL["pregnant"]: int(pr == "True"),
     }
     row = pd.DataFrame([vals])[FEATURES]
     pred = gb.predict(row)[0]
