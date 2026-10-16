@@ -122,6 +122,9 @@ if bt:
         st.success(f"✅ Low Risk: No thyroid abnormality detected. Confidence: {conf:.1f}%")
     else:
         st.error(f"⚠️ High Risk: Predicted class is {label}. Confidence: {conf:.1f}%")
+    st.dataframe(pd.DataFrame({"Class": le.classes_, "Probability (%)": gb.predict_proba(row)[0] * 100}), use_container_width=True)
+with st.expander("Dataset check"):
+    st.write(df[COL["target"]].value_counts())
 st.divider()
 st.subheader("📊 Model Performance & Dataset Trends")
 st.markdown("### Feature Correlation Heatmap")
@@ -163,15 +166,18 @@ if hist.empty:
 else:
     hist["created_at"] = pd.to_datetime(hist["created_at"])
     param = st.selectbox("Select parameter to visualize", ["tsh", "t3", "tt4", "t4u", "fti", "age", "confidence"])
-    figh, axh = plt.subplots(figsize=(10, 4))
-    axh.plot(hist["created_at"], hist[param], marker="o")
+    plot_df = hist.tail(15)
+    figh, axh = plt.subplots(figsize=(10, 5))
+    axh.plot(plot_df["created_at"], plot_df[param], marker="o")
+    axh.set_xticks(plot_df["created_at"])
     axh.set_xlabel("Time")
     axh.set_ylabel(param.upper())
     axh.set_title(f"{param.upper()} over time")
-    axh.xaxis.set_major_formatter(mdates.DateFormatter("%d-%m-%Y %I:%M:%S %p"))
-    figh.autofmt_xdate()
+    axh.xaxis.set_major_formatter(mdates.DateFormatter("%d-%m-%Y\n%I:%M:%S %p"))
+    plt.setp(axh.get_xticklabels(), rotation=45, ha="right")
+    figh.tight_layout()
     st.pyplot(figh)
-    st.dataframe(hist.sort_values("created_at", ascending=False), use_container_width=True)
+    st.dataframe(hist.sort_values("created_at", ascending=False), use_container_width=True, column_config={"created_at": st.column_config.DatetimeColumn("Date & Time", format="DD-MM-YYYY hh:mm:ss a")})
     confirm = st.checkbox("Confirm clear all records")
     if st.button("Clear Database", disabled=not confirm):
         with sqlite3.connect(DB_PATH) as conn:
