@@ -4,14 +4,21 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import seaborn as sns
 import sqlite3
+import streamlit as st
 from datetime import datetime
 from zoneinfo import ZoneInfo
-import streamlit as st
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, f1_score
+from sklearn.utils.class_weight import compute_sample_weight
+from sklearn.metrics import accuracy_score, f1_score
+from sklearn.utils.class_weight import compute_sample_weight
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from xgboost import XGBClassifier
 st.set_page_config(page_title="Thyroid Prediction App", page_icon="🫁", layout="wide")
 COL = {
     "age": "age",
@@ -57,21 +64,33 @@ def train_models():
     for c in NUM:
         df[c] = pd.to_numeric(df[c], errors="coerce")
     df = df.dropna()
+    df = df[df[COL["age"]].between(1, 120) & (df[COL["t4u"]] > 0)]
     for c in BIN:
         df[c] = df[c].astype(str).str.strip().str.lower().isin(["male", "m", "true", "t", "1", "yes"]).astype(int)
+    df = df.drop_duplicates().reset_index(drop=True)
     le = LabelEncoder()
     y = le.fit_transform(df[COL["target"]])
     X = df[FEATURES]
     strat = y if np.bincount(y).min() > 1 else None
     X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.2, random_state=42, stratify=strat)
-    dt = DecisionTreeClassifier(random_state=42).fit(X_tr, y_tr)
-    gb = GradientBoostingClassifier(random_state=42).fit(X_tr, y_tr)
-    acc = {
-        "Decision Tree": accuracy_score(y_te, dt.predict(X_te)) * 100,
-        "Gradient Boosting": accuracy_score(y_te, gb.predict(X_te)) * 100,
+        sw = compute_sample_weight("balanced", y_tr)
+    models = {
+        "Decision Tree": DecisionTreeClassifier(max_depth=8, class_weight="balanced", random_state=42),
+        "Random Forest": RandomForestClassifier(n_estimators=300, class_weight="balanced", random_state=42, n_jobs=-1),
+        "SVM": make_pipeline(StandardScaler(), SVC(probability=True, class_weight="balanced", random_state=42)),
+        "XGBoost": XGBClassifier(n_estimators=300, max_depth=4, learning_rate=0.1, eval_metric="mlogloss", random_state=42),
     }
-    return df, le, gb, acc
-df, le, gb, acc = train_models()
+    fitted = {}
+    for n, m in models.items():
+        if n == "XGBoost":
+            m.fit(X_tr, y_tr, sample_weight=sw)
+        else:
+            m.fit(X_tr, y_tr)
+        fitted[n] = m
+    acc = {n: accuracy_score(y_te, m.predict(X_te)) * 100 for n, m in fitted.items()}
+    f1 = {n: f1_score(y_te, m.predict(X_te), average="macro") * 100 for n, m in fitted.items()}
+    return df, le, fitted, acc, f1
+df, le, fitted, acc, f1 = train_models()
 def meter(val, low, high):
     if val < low:
         color = "#2c7bb6"
@@ -98,21 +117,6 @@ tu = st.sidebar.slider("Thyroxine Uptake (T4U)", 0.0, 5.0, 1.0)
 meter(tu, 0.74, 1.32)
 ft = st.sidebar.slider("Free Thyroxine Index (FTI)", 0.0, 500.0, 100.0)
 meter(ft, 65.0, 145.0)
-
-def get_slider_color(val, low, high):
-    if val < low:
-        return "#2c7bb6"  # Blue for Low
-    elif val > high:
-        return "#d7191c"  # Red for High
-    return "#1a9641"      # Green for Normal
-
-ts_color = get_slider_color(ts, 0.4, 4.0)
-
-st.markdown(f"""
-<style>
-div[data-baseweb="slider"] div[role="slider"] {{ background-color: {ts_color} !important; }}
-</style>
-""", unsafe_allow_html=True)
 ot = st.sidebar.selectbox("On Thyroxine", ["False", "True"])
 tsu = st.sidebar.selectbox("Thyroid Surgery", ["False", "True"])
 pr = st.sidebar.selectbox("Pregnant", ["False", "True"], disabled=(sx == "Male"))
@@ -150,6 +154,9 @@ if bt:
     label = le.inverse_transform([pred])[0]
     conf = gb.predict_proba(row)[0].max() * 100
     save_record((datetime.now(ZoneInfo("Asia/Kolkata")).strftime("%Y-%m-%d %H:%M:%S"), ag, sx, ts, t3, tt, tu, ft, ot, tsu, pr, str(label), float(conf)))
+    out = [c for c in NUM if not (df[c].min() <= row[c].iloc[0] <= df[c].max())]
+    if out:
+        st.warning("Inputs outside the training data range: " + ", ".join(out) + ". The prediction is unreliable.")
     if str(label).lower() in ("negative", "normal", "0"):
         st.success(f"✅ Low Risk: No thyroid abnormality detected. Confidence: {conf:.1f}%")
     else:
