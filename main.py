@@ -75,7 +75,7 @@ def train_models():
     df = df.drop_duplicates().reset_index(drop=True)
     le = LabelEncoder()
     y = le.fit_transform(df[COL["target"]])
-    X = df[FEATURES]
+    X = df[FEATURES].values
     strat = y if np.bincount(y).min() > 1 else None
     X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.2, random_state=42, stratify=strat)
     sw = compute_sample_weight("balanced", y_tr)
@@ -166,7 +166,7 @@ if bt:
         COL["surgery"]: int(tsu == "True"),
         COL["pregnant"]: int(pr == "True"),
     }
-    row = pd.DataFrame([vals])[FEATURES]
+    row = pd.DataFrame([vals])[FEATURES].values
     pred = mdl.predict(row)[0]
     label = le.inverse_transform([pred])[0]
     conf = mdl.predict_proba(row)[0].max() * 100
