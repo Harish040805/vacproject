@@ -239,7 +239,7 @@ if hist.empty:
     st.info("No records yet. Click Predict Thyroid Risk to save the first record.")
 else:
     hist["created_at"] = pd.to_datetime(hist["created_at"])
-    param = st.selectbox("Select parameter to visualize", ["tsh", "t3", "tt4", "t4u", "fti", "age", "confidence"])
+    param = st.selectbox("Select parameter from Patient Input Features to visualize (TSH, T3, TT4, T4U, FTI, Age, Confidence)", ["tsh", "t3", "tt4", "t4u", "fti", "age", "confidence"])
     plot_df = hist.tail(15)
     col1, col2 = st.columns(2)
     with col1:
