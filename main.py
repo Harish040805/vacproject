@@ -60,7 +60,6 @@ pr = st.sidebar.selectbox("Pregnant", ["f", "t"])
 bt = st.sidebar.button("Predict Thyroid Risk")
 st.title("🫁 Thyroid Prediction App")
 st.write("Use machine learning to estimate a patient's risk of thyroid abnormalities.")
-st.divider()
 st.subheader("Prediction Results")
 if bt:
     vals = {
