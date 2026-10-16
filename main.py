@@ -80,18 +80,6 @@ def get_slider_color(val, low, high):
         return "#d7191c"  # Red for High
     return "#1a9641"      # Green for Normal
 
-ts_color = get_slider_color(ts, 0.4, 4.0)
-t3_color = get_slider_color(t3, 0.8, 2.0)
-tt_color = get_slider_color(tt, 5.0, 12.0)
-tu_color = get_slider_color(tu, 0.74, 1.32)
-ft_color = get_slider_color(ft, 65.0, 145.0)
-
-st.markdown(f"""
-<style>
-div[data-baseweb="slider"] div[role="slider"] {{ background-color: {ts_color} !important; }}
-</style>
-""", unsafe_allow_html=True)
-
 ag = st.sidebar.slider("Patient Age", 1, 120, 20)
 sx = st.sidebar.selectbox("Gender", ["Male", "Female"])
 ts = st.sidebar.slider("Thyroid Stimulating Hormone (TSH)", 0.0, 500.0, 1.0)
@@ -99,6 +87,21 @@ t3 = st.sidebar.slider("Triiodothyronine (T3)", 0.0, 20.0, 2.0)
 tt = st.sidebar.slider("Total Thyroxine (TT4)", 0.0, 500.0, 100.0)
 tu = st.sidebar.slider("Thyroxine Uptake (T4U)", 0.0, 5.0, 1.0)
 ft = st.sidebar.slider("Free Thyroxine Index (FTI)", 0.0, 500.0, 100.0)
+
+def get_slider_color(val, low, high):
+    if val < low:
+        return "#2c7bb6"  # Blue for Low
+    elif val > high:
+        return "#d7191c"  # Red for High
+    return "#1a9641"      # Green for Normal
+
+ts_color = get_slider_color(ts, 0.4, 4.0)
+
+st.markdown(f"""
+<style>
+div[data-baseweb="slider"] div[role="slider"] {{ background-color: {ts_color} !important; }}
+</style>
+""", unsafe_allow_html=True)
 ot = st.sidebar.selectbox("On Thyroxine", ["False", "True"])
 tsu = st.sidebar.selectbox("Thyroid Surgery", ["False", "True"])
 pr = st.sidebar.selectbox("Pregnant", ["False", "True"])
