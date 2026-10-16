@@ -108,7 +108,5 @@ if bt:
     else:
         st.error(f"High Risk: Predicted class is {label}. Confidence: {conf:.1f}%")
 st.divider()
-st.header("📊 Model Performance & Dataset Trends")
-st.subheader("Prediction Results")
 st.write(" ")
 st.subheader("💻 Developed by Harish.R")
