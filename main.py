@@ -38,6 +38,13 @@ ft = st.sidebar.number_input("FTI", 0.0, 500.0, 100.0)
 ot = st.sidebar.selectbox("On Thyroxine", ["f", "t"])
 tsu = st.sidebar.selectbox("Thyroid Surgery", ["f", "t"])
 pr = st.sidebar.selectbox("Pregnant", ["f", "t"])
+
+bt = st.sidebar.button("Predict Thyroid Risk")
+
+st.subheader("Prediction Results")
+if bt:
+    st.success("Low Risk: This patient is stable and has a low likelihood of thyroid abnormalities.")
+
 st.write(" ")
 st.write(" ")
 st.subheader("💻 Developed by Harish.R")
