@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 import streamlit as st
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
@@ -59,16 +60,16 @@ tsu = st.sidebar.selectbox("Thyroid Surgery", ["False", "True"])
 pr = st.sidebar.selectbox("Pregnant", ["False", "True"])
 bt = st.sidebar.button("Predict Thyroid Risk")
 st.title("🫁 Thyroid Prediction App")
-st.subheader("Domain: Endocrinology")
+st.subheader("🔵 Domain: Endocrinology")
 st.write("Use machine learning to estimate a patient's risk of thyroid abnormalities.")
 st.write("Hosted in Streamlit")
 st.write("Input Dataset Fields")
 st.write("•	Age (in years) &nbsp; • Sex/Gender &nbsp; • TSH — Thyroid-Stimulating Hormone &nbsp; • T3 — Triiodo Thyronine Measurement &nbsp; • TT4 — Total Thyroxine &nbsp; • T4U — Thyroxine Uptake Measurement &nbsp; • FTI — Free Thyroxine Index &nbsp; • Pregnant — Pregnancy Indicator")
 st.write(" ")
-st.subheader("Algorithms")
+st.subheader("🔵 Algorithms Used")
 st.write("Decision Tree, Random Forest, SVM, XGBoost")
 st.write(" ")
-st.subheader("Prediction Results")
+st.subheader("🔵 Prediction Results")
 if bt:
     vals = {
         COL["age"]: ag,
@@ -92,6 +93,10 @@ if bt:
         st.error(f"⚠️ High Risk: Predicted class is {label}. Confidence: {conf:.1f}%")
 st.divider()
 st.subheader("📊 Model Performance & Dataset Trends")
+st.markdown("### Feature Correlation Heatmap")
+fig, ax = plt.subplots(figsize=(8, 6))
+sns.heatmap(df.corr(), annot=True, cmap="coolwarm", fmt=".2f", ax=ax)
+st.pyplot(fig)
 m1, m2 = st.columns(2)
 m1.metric("Decision Tree Accuracy", f"{acc['Decision Tree']:.1f}%")
 m2.metric("Gradient Boosting Accuracy", f"{acc['Gradient Boosting']:.1f}%")
