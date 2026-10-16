@@ -150,7 +150,12 @@ st.write("⭐ Algorithms: Decision Tree, Random Forest, SVM (Support Vector Mach
 st.write("⭐ Database: SQLite")
 st.write("Uses predictions.db to store patient records from SQLite database in where the data is stored each time as data fetched.")
 st.write(" ")
+st.subheader("🔵 Features")
+st.write("⭐ Parameter (feature) based specific visualization of graphs")
+st.write("⭐ Visualization as 2 graphs (Scatter Plot, Bar Graph)")
+st.write("⭐ Strorage of Historical Records in database (SQLite)")
 st.subheader("🔵 Prediction Results")
+st.write("-- The output goes here --")
 if bt:
     vals = {
         COL["age"]: ag,
