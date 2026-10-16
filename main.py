@@ -105,20 +105,21 @@ def meter(val, low, high):
 model_name = st.sidebar.selectbox("Algorithm", list(fitted))
 mdl = fitted[model_name]
 rg = {c: (float(df[c].min()), float(df[c].max()), float(df[c].median())) for c in NUM}
+nr = df[df[COL["target"]] == "normal"][["TSH", "T3", "TT4", "T4U", "FTI"]]
+ref = {k: (float(nr[k].quantile(0.05)), float(nr[k].quantile(0.95))) for k in nr.columns}
 st.sidebar.header("Patient Input Features")
 ag = st.sidebar.slider("Patient Age", int(rg["age"][0]), int(rg["age"][1]), int(rg["age"][2]))
 sx = st.sidebar.selectbox("Gender", ["Male", "Female"])
 ts = st.sidebar.slider("Thyroid Stimulating Hormone (TSH)", rg["TSH"][0], rg["TSH"][1], rg["TSH"][2], step=0.1)
-meter(ts, 0.4, 4.0)
+meter(ts, *ref["TSH"])
 t3 = st.sidebar.slider("Triiodothyronine (T3)", rg["T3"][0], rg["T3"][1], rg["T3"][2], step=0.1)
-meter(t3, 1.2, 3.1)
+meter(t3, *ref["T3"])
 tt = st.sidebar.slider("Total Thyroxine (TT4)", rg["TT4"][0], rg["TT4"][1], rg["TT4"][2], step=1.0)
-meter(tt, 64.0, 154.0)
+meter(tt, *ref["TT4"])
 tu = st.sidebar.slider("Thyroxine Uptake (T4U)", rg["T4U"][0], rg["T4U"][1], rg["T4U"][2], step=0.01)
-meter(tu, 0.74, 1.32)
-ft = tt / tu
-st.sidebar.metric("Free Thyroxine Index (FTI) = TT4 / T4U", f"{ft:.1f}")
-meter(ft, 65.0, 145.0)
+meter(tu, *ref["T4U"])
+ft = st.sidebar.slider("Free Thyroxine Index (FTI)", rg["FTI"][0], rg["FTI"][1], rg["FTI"][2], step=0.1)
+meter(ft, *ref["FTI"])
 ot = st.sidebar.selectbox("On Thyroxine", ["False", "True"])
 tsu = st.sidebar.selectbox("Thyroid Surgery", ["False", "True"])
 pr = st.sidebar.selectbox("Pregnant", ["False", "True"], disabled=(sx == "Male"))
@@ -156,35 +157,36 @@ if bt:
     label = le.inverse_transform([pred])[0]
     conf = mdl.predict_proba(row)[0].max() * 100
     save_record((datetime.now(ZoneInfo("Asia/Kolkata")).strftime("%Y-%m-%d %H:%M:%S"), ag, sx, ts, t3, tt, tu, ft, ot, tsu, pr, str(label), float(conf)))
-    out = [c for c in NUM if not (df[c].min() <= row[c].iloc[0] <= df[c].max())]
-    if out:
-        st.warning("Inputs outside the training data range: " + ", ".join(out) + ". The prediction is unreliable.")
-    if str(label).lower() in ("negative", "normal", "0"):
-        st.success(f"✅ Low Risk: No thyroid abnormality detected. Confidence: {conf:.1f}%")
+    probs = mdl.predict_proba(row)[0]
+    classes = list(le.classes_)
+    p_ab = 100 - probs[classes.index("normal")] * 100
+    ab_idx = max((i for i, c in enumerate(classes) if c != "normal"), key=lambda i: probs[i])
+    ab_label = classes[ab_idx]
+    if p_ab < 20:
+        st.success(f"Normal: no thyroid abnormality detected. Abnormal probability: {p_ab:.1f}%")
+    elif p_ab < 50:
+        st.warning(f"Low Risk: possible {ab_label}. Abnormal probability: {p_ab:.1f}%")
     else:
-        st.error(f"⚠️ High Risk: Predicted class is {label}. Confidence: {conf:.1f}%")
+        st.error(f"High Risk: likely {ab_label}. Abnormal probability: {p_ab:.1f}%")
     
     st.markdown("### 🔍 Feature Range Indicators")
-    ref_ranges = {
-        "TSH": (0.4, 4.0),
-        "T3": (1.2, 3.1),
-        "TT4": (64.0, 154.0),
-        "T4U": (0.74, 1.32),
-        "FTI": (65.0, 145.0)
-    }
+    ref_ranges = ref
     val_dict = {"TSH": ts, "T3": t3, "TT4": tt, "T4U": tu, "FTI": ft}
     cols_ind = st.columns(len(val_dict))
     for i, (k, v) in enumerate(val_dict.items()):
         low, high = ref_ranges[k]
         if v < low:
-            cols_ind[i].metric(k, v, "-Low", delta_color="off")
+            cols_ind[i].metric(k, round(v, 2), "-Low", delta_color="off")
         elif v > high:
-            cols_ind[i].metric(k, v, "+High", delta_color="inverse")
+            cols_ind[i].metric(k, round(v, 2), "+High", delta_color="inverse")
         else:
-            cols_ind[i].metric(k, v, "Normal", delta_color="off")
+            cols_ind[i].metric(k, round(v, 2), "Normal", delta_color="off")
     st.dataframe(pd.DataFrame({"Class": le.classes_, "Probability (%)": mdl.predict_proba(row)[0] * 100}), use_container_width=True)
 with st.expander("Dataset check"):
     st.write(df[COL["target"]].value_counts())
+    st.write(df[NUM].describe())
+    st.write((df["TT4"] / df["T4U"] - df["FTI"]).abs().describe())
+    st.write(df.groupby(COL["target"])[["TSH", "T3", "TT4", "T4U", "FTI"]].mean())
 st.divider()
 st.subheader("📊 Model Performance & Dataset Trends")
 st.markdown("### Feature Correlation Heatmap")
