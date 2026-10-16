@@ -1,23 +1,24 @@
+import re
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
 import seaborn as sns
 import sqlite3
 import streamlit as st
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.metrics import accuracy_score, f1_score
 from sklearn.utils.class_weight import compute_sample_weight
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import StandardScaler
 from xgboost import XGBClassifier
+
 st.set_page_config(page_title="Thyroid Prediction App", page_icon="🫁", layout="wide")
+
 COL = {
     "age": "age",
     "gender": "gender",
@@ -31,10 +32,31 @@ COL = {
     "pregnant": "pregnant",
     "target": "thyroid_class",
 }
+ALIASES = {
+    "age": ["age"],
+    "gender": ["gender", "sex"],
+    "tsh": ["tsh"],
+    "t3": ["t3"],
+    "tt4": ["tt4"],
+    "t4u": ["t4u"],
+    "fti": ["fti"],
+    "thyroxine": ["onthyroxine", "thyroxine"],
+    "surgery": ["thyroidsurgery", "surgery"],
+    "pregnant": ["pregnant", "pregnancy"],
+    "target": ["thyroidclass", "class", "target", "binaryclass", "diagnosis", "label", "category", "thyroid"],
+}
+REQUIRED = ["age", "tsh", "t3", "tt4", "t4u", "fti", "target"]
 NUM = [COL[k] for k in ["age", "tsh", "t3", "tt4", "t4u", "fti"]]
 BIN = {COL["gender"]: "Male", COL["thyroxine"]: "True", COL["surgery"]: "True", COL["pregnant"]: "True"}
 FEATURES = NUM + list(BIN)
 DB_PATH = "predictions.db"
+NORMAL_NAMES = ["normal", "negative", "healthy", "n", "-", "0", "no", "false"]
+
+
+def norm(s):
+    return re.sub(r"[^a-z0-9]", "", str(s).lower())
+
+
 def init_db():
     with sqlite3.connect(DB_PATH) as conn:
         conn.execute(
@@ -43,6 +65,8 @@ def init_db():
             "created_at TEXT, age REAL, gender TEXT, tsh REAL, t3 REAL, tt4 REAL, t4u REAL, fti REAL, "
             "on_thyroxine TEXT, thyroid_surgery TEXT, pregnant TEXT, prediction TEXT, confidence REAL)"
         )
+
+
 def save_record(rec):
     with sqlite3.connect(DB_PATH) as conn:
         conn.execute(
@@ -51,21 +75,60 @@ def save_record(rec):
             "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
             rec,
         )
+
+
 def load_records():
     with sqlite3.connect(DB_PATH) as conn:
         return pd.read_sql_query("SELECT * FROM predictions ORDER BY created_at", conn)
+
+
 init_db()
+
+
 class Ensemble:
     def __init__(self, models):
         self.models = models
+
     def predict_proba(self, X):
         return np.mean([m.predict_proba(X) for m in self.models], axis=0)
+
     def predict(self, X):
         return self.predict_proba(X).argmax(axis=1)
+
+
+@st.cache_data
+def read_raw():
+    return pd.read_csv("thyroid_dataset.csv")
+
+
+def prepare_data():
+    raw = read_raw().copy()
+    lookup = {norm(c): c for c in raw.columns}
+    picked = {}
+    for key, names in ALIASES.items():
+        for n in names:
+            if n in lookup:
+                picked[key] = lookup[n]
+                break
+    missing = [k for k in REQUIRED if k not in picked]
+    if missing:
+        st.error(f"Required columns not found in thyroid_dataset.csv: {missing}")
+        st.write("Columns present in your CSV:")
+        st.write(list(raw.columns))
+        st.stop()
+    data = pd.DataFrame()
+    for key, src in picked.items():
+        data[COL[key]] = raw[src]
+    for key in ["gender", "thyroxine", "surgery", "pregnant"]:
+        if COL[key] not in data.columns:
+            data[COL[key]] = "f"
+    data[COL["target"]] = data[COL["target"]].astype(str).str.strip()
+    return data[FEATURES + [COL["target"]]]
+
+
 @st.cache_resource
-def train_models():
-    df = pd.read_csv("thyroid_dataset.csv")
-    df = df[FEATURES + [COL["target"]]].replace("?", np.nan)
+def train_models(data):
+    df = data.replace("?", np.nan)
     for c in NUM:
         df[c] = pd.to_numeric(df[c], errors="coerce")
     df = df.dropna()
@@ -96,7 +159,16 @@ def train_models():
     acc = {n: accuracy_score(y_te, m.predict(X_te)) * 100 for n, m in fitted.items()}
     f1 = {n: f1_score(y_te, m.predict(X_te), average="macro") * 100 for n, m in fitted.items()}
     return df, le, fitted, acc, f1
-df, le, fitted, acc, f1 = train_models()
+
+
+df, le, fitted, acc, f1 = train_models(prepare_data())
+
+classes = list(le.classes_)
+normal_label = next((c for c in classes if c.strip().lower() in NORMAL_NAMES), None)
+if normal_label is None:
+    normal_label = df[COL["target"]].value_counts().idxmax()
+
+
 def meter(val, low, high):
     if val < low:
         color = "#2c7bb6"
@@ -104,17 +176,22 @@ def meter(val, low, high):
         color = "#d7191c"
     else:
         color = "#1a9641"
-    pct = min(max(val / (high * 2) * 100, 0), 100)
+    pct = min(max(val / (high * 2) * 100, 0), 100) if high else 0
     st.sidebar.markdown(
         f'<div style="background:#e0e0e0;border-radius:6px;height:8px;margin:-8px 0 14px 0;">'
         f'<div style="width:{pct}%;background:{color};height:8px;border-radius:6px;"></div></div>',
         unsafe_allow_html=True,
     )
+
+
 model_name = st.sidebar.selectbox("Algorithm", list(fitted), index=len(fitted) - 1)
 mdl = fitted[model_name]
 rg = {c: (float(df[c].min()), float(df[c].max()), float(df[c].median())) for c in NUM}
-nr = df[df[COL["target"]] == "normal"][["TSH", "T3", "TT4", "T4U", "FTI"]]
+nr = df[df[COL["target"]] == normal_label][["TSH", "T3", "TT4", "T4U", "FTI"]]
+if nr.empty:
+    nr = df[["TSH", "T3", "TT4", "T4U", "FTI"]]
 ref = {k: (float(nr[k].quantile(0.05)), float(nr[k].quantile(0.95))) for k in nr.columns}
+
 st.sidebar.header("Patient Input Features")
 ag = st.sidebar.slider("Patient Age", int(rg["age"][0]), int(rg["age"][1]), int(rg["age"][2]))
 sx = st.sidebar.selectbox("Gender", ["Male", "Female"])
@@ -134,6 +211,7 @@ pr = st.sidebar.selectbox("Pregnant", ["False", "True"], disabled=(sx == "Male")
 if sx == "Male":
     pr = "False"
 bt = st.sidebar.button("Predict Thyroid Risk")
+
 st.title("🫁 Thyroid Prediction App")
 st.subheader("🔵 Domain: Endocrinology")
 st.write("🎯 AIM: To predict Thyroid using Machine Learning and track patient data.")
@@ -143,7 +221,7 @@ st.write("Use machine learning to estimate a patient's risk of thyroid abnormali
 st.write("⭐ Hosted in Streamlit")
 st.write("⭐ Date using Matplotlib's Date Time")
 st.write("⭐ Input Dataset Fields")
-st.write("•	Age (in years) &nbsp; • Gender &nbsp; • TSH — Thyroid-Stimulating Hormone &nbsp; • T3 — Triiodo Thyronine Measurement &nbsp; • TT4 — Total Thyroxine &nbsp; • T4U — Thyroxine Uptake Measurement &nbsp; • FTI — Free Thyroxine Index &nbsp; • Pregnant — Pregnancy Indicator")
+st.write("• Age (in years) &nbsp; • Gender &nbsp; • TSH — Thyroid-Stimulating Hormone &nbsp; • T3 — Triiodo Thyronine Measurement &nbsp; • TT4 — Total Thyroxine &nbsp; • T4U — Thyroxine Uptake Measurement &nbsp; • FTI — Free Thyroxine Index &nbsp; • Pregnant — Pregnancy Indicator")
 st.subheader("🔵 Technology Used")
 st.write("⭐ Algorithms: Decision Tree, Random Forest, SVM (Support Vector Machine), XGBoost (Extra Gradient Boost)")
 st.write("⭐ Database: SQLite (Uses predictions.db to store patient records from SQLite database in where the data is stored each time as data fetched)")
@@ -153,6 +231,7 @@ st.write("⭐ Visualization as 2 graphs (Scatter Plot, Bar Graph)")
 st.write("⭐ Strorage of Historical Records in database (SQLite)")
 st.subheader("🔵 Prediction Results")
 st.write("-- The output goes here --")
+
 if bt:
     vals = {
         COL["age"]: ag,
@@ -167,14 +246,14 @@ if bt:
         COL["pregnant"]: int(pr == "True"),
     }
     row = pd.DataFrame([vals])[FEATURES].values
-    pred = mdl.predict(row)[0]
-    label = le.inverse_transform([pred])[0]
-    conf = mdl.predict_proba(row)[0].max() * 100
-    save_record((datetime.now(ZoneInfo("Asia/Kolkata")).strftime("%Y-%m-%d %H:%M:%S"), ag, sx, ts, t3, tt, tu, ft, ot, tsu, pr, str(label), float(conf)))
     probs = mdl.predict_proba(row)[0]
-    classes = list(le.classes_)
-    p_ab = 100 - probs[classes.index("normal")] * 100
-    ab_idx = max((i for i, c in enumerate(classes) if c != "normal"), key=lambda i: probs[i])
+    pred = int(probs.argmax())
+    label = le.inverse_transform([pred])[0]
+    conf = probs.max() * 100
+    save_record((datetime.now(ZoneInfo("Asia/Kolkata")).strftime("%Y-%m-%d %H:%M:%S"), ag, sx, ts, t3, tt, tu, ft, ot, tsu, pr, str(label), float(conf)))
+    p_ab = 100 - probs[classes.index(normal_label)] * 100
+    others = [i for i, c in enumerate(classes) if c != normal_label]
+    ab_idx = max(others, key=lambda i: probs[i]) if others else pred
     ab_label = classes[ab_idx]
     if p_ab < 20:
         st.success(f"Normal: no thyroid abnormality detected. Abnormal probability: {p_ab:.1f}%")
@@ -183,18 +262,18 @@ if bt:
     else:
         st.error(f"High Risk: likely {ab_label}. Abnormal probability: {p_ab:.1f}%")
     st.markdown("### 🔍 Feature Range Indicators")
-    ref_ranges = ref
     val_dict = {"TSH": ts, "T3": t3, "TT4": tt, "T4U": tu, "FTI": ft}
     cols_ind = st.columns(len(val_dict))
     for i, (k, v) in enumerate(val_dict.items()):
-        low, high = ref_ranges[k]
+        low, high = ref[k]
         if v < low:
             cols_ind[i].metric(k, round(v, 2), "-Low", delta_color="off")
         elif v > high:
             cols_ind[i].metric(k, round(v, 2), "+High", delta_color="inverse")
         else:
             cols_ind[i].metric(k, round(v, 2), "Normal", delta_color="off")
-    st.dataframe(pd.DataFrame({"Class": le.classes_, "Probability (%)": mdl.predict_proba(row)[0] * 100}), use_container_width=True)
+    st.dataframe(pd.DataFrame({"Class": le.classes_, "Probability (%)": probs * 100}), use_container_width=True)
+
 st.divider()
 st.subheader("📊 Model Performance & Dataset Trends")
 st.markdown("### Feature Correlation Heatmap")
@@ -206,8 +285,10 @@ plt.xticks(rotation=45, ha="right")
 plt.yticks(rotation=0)
 fig.tight_layout()
 st.pyplot(fig)
+
 for mc, n in zip(st.columns(len(acc)), acc):
     mc.metric(n, f"Acc {acc[n]:.1f}%", f"Macro F1 {f1[n]:.1f}%", delta_color="off")
+
 c1, c2 = st.columns(2)
 fig1, ax1 = plt.subplots()
 ax1.bar(list(acc.keys()), list(acc.values()), color=["#92c5de", "#e8867c", "#a6d96a", "#fdae61", "#8073ac"])
@@ -216,6 +297,7 @@ ax1.set_ylim(0, 100)
 ax1.set_ylabel("Accuracy (%)")
 ax1.set_title("Model Accuracy Comparison")
 c1.pyplot(fig1)
+
 fig2, ax2 = plt.subplots()
 sample = df.sample(min(300, len(df)), random_state=42)
 colors = ["#d7191c", "#2c7bb6", "#1a9641", "#ff7f00"]
@@ -228,6 +310,7 @@ ax2.set_ylabel("TSH")
 ax2.set_title("Age vs. TSH")
 ax2.legend(title="Thyroid Class")
 c2.pyplot(fig2)
+
 st.divider()
 st.subheader("🗃️ Patient Records Over Time")
 hist = load_records()
@@ -262,5 +345,6 @@ else:
             conn.execute("DELETE FROM predictions")
             conn.execute("DELETE FROM sqlite_sequence WHERE name='predictions'")
         st.rerun()
+
 st.divider()
 st.subheader("💻 Developed by Harish.R")
