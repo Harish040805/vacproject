@@ -172,6 +172,12 @@ else:
     figh.autofmt_xdate()
     st.pyplot(figh)
     st.dataframe(hist.sort_values("created_at", ascending=False), use_container_width=True)
+    confirm = st.checkbox("Confirm clear all records")
+    if st.button("Clear Database", disabled=not confirm):
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.execute("DELETE FROM predictions")
+            conn.execute("DELETE FROM sqlite_sequence WHERE name='predictions'")
+        st.rerun()
 st.divider()
 st.write(" ")
 st.subheader("💻 Developed by Harish.R")
