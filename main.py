@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 import seaborn as sns
 import sqlite3
 from datetime import datetime
@@ -87,6 +88,7 @@ st.title("🫁 Thyroid Prediction App")
 st.subheader("🔵 Domain: Endocrinology")
 st.write("Use machine learning to estimate a patient's risk of thyroid abnormalities.")
 st.write("⭐ Hosted in Streamlit")
+st.write("⭐ Date using Matplotlib's Date Time")
 st.write("⭐ Input Dataset Fields")
 st.write("•	Age (in years) &nbsp; • Sex/Gender &nbsp; • TSH — Thyroid-Stimulating Hormone &nbsp; • T3 — Triiodo Thyronine Measurement &nbsp; • TT4 — Total Thyroxine &nbsp; • T4U — Thyroxine Uptake Measurement &nbsp; • FTI — Free Thyroxine Index &nbsp; • Pregnant — Pregnancy Indicator")
 st.write(" ")
@@ -166,6 +168,7 @@ else:
     axh.set_xlabel("Time")
     axh.set_ylabel(param.upper())
     axh.set_title(f"{param.upper()} over time")
+    axh.xaxis.set_major_formatter(mdates.DateFormatter("%d-%m-%Y %I:%M:%S %p"))
     figh.autofmt_xdate()
     st.pyplot(figh)
     st.dataframe(hist.sort_values("created_at", ascending=False), use_container_width=True)
