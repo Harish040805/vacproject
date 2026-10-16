@@ -20,7 +20,7 @@ from xgboost import XGBClassifier
 st.set_page_config(page_title="Thyroid Prediction App", page_icon="🫁", layout="wide")
 COL = {
     "age": "age",
-    "sex": "sex",
+    "gender": "gender",
     "tsh": "TSH",
     "t3": "T3",
     "tt4": "TT4",
@@ -32,7 +32,7 @@ COL = {
     "target": "thyroid_class",
 }
 NUM = [COL[k] for k in ["age", "tsh", "t3", "tt4", "t4u", "fti"]]
-BIN = {COL["sex"]: "Male", COL["thyroxine"]: "True", COL["surgery"]: "True", COL["pregnant"]: "True"}
+BIN = {COL["gender"]: "Male", COL["thyroxine"]: "True", COL["surgery"]: "True", COL["pregnant"]: "True"}
 FEATURES = NUM + list(BIN)
 DB_PATH = "predictions.db"
 def init_db():
@@ -40,13 +40,13 @@ def init_db():
         conn.execute(
             "CREATE TABLE IF NOT EXISTS predictions ("
             "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-            "created_at TEXT, age REAL, sex TEXT, tsh REAL, t3 REAL, tt4 REAL, t4u REAL, fti REAL, "
+            "created_at TEXT, age REAL, gender TEXT, tsh REAL, t3 REAL, tt4 REAL, t4u REAL, fti REAL, "
             "on_thyroxine TEXT, thyroid_surgery TEXT, pregnant TEXT, prediction TEXT, confidence REAL)"
         )
 def save_record(rec):
     with sqlite3.connect(DB_PATH) as conn:
         conn.execute(
-            "INSERT INTO predictions (created_at, age, sex, tsh, t3, tt4, t4u, fti, "
+            "INSERT INTO predictions (created_at, age, gender, tsh, t3, tt4, t4u, fti, "
             "on_thyroxine, thyroid_surgery, pregnant, prediction, confidence) "
             "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
             rec,
@@ -163,7 +163,7 @@ if bt:
         COL["tt4"]: tt,
         COL["t4u"]: tu,
         COL["fti"]: ft,
-        COL["sex"]: int(sx == "Male"),
+        COL["gender"]: int(sx == "Male"),
         COL["thyroxine"]: int(ot == "True"),
         COL["surgery"]: int(tsu == "True"),
         COL["pregnant"]: int(pr == "True"),
