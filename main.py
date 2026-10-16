@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import sqlite3
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import streamlit as st
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
@@ -112,7 +113,7 @@ if bt:
     label = le.inverse_transform([pred])[0]
     conf = gb.predict_proba(row)[0].max() * 100
     save_record((
-        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        datetime.now(ZoneInfo("Asia/Kolkata")).strftime("%Y-%m-%d %H:%M:%S"),
         ag, sx, ts, t3, tt, tu, ft, ot, tsu, pr, str(label), float(conf),
     ))
     if str(label).lower() in ("negative", "normal", "0"):
