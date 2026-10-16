@@ -144,11 +144,9 @@ st.write("⭐ Hosted in Streamlit")
 st.write("⭐ Date using Matplotlib's Date Time")
 st.write("⭐ Input Dataset Fields")
 st.write("•	Age (in years) &nbsp; • Gender &nbsp; • TSH — Thyroid-Stimulating Hormone &nbsp; • T3 — Triiodo Thyronine Measurement &nbsp; • TT4 — Total Thyroxine &nbsp; • T4U — Thyroxine Uptake Measurement &nbsp; • FTI — Free Thyroxine Index &nbsp; • Pregnant — Pregnancy Indicator")
-st.write(" ")
 st.subheader("🔵 Technology Used")
 st.write("⭐ Algorithms: Decision Tree, Random Forest, SVM (Support Vector Machine), XGBoost (Extra Gradient Boost)")
 st.write("⭐ Database: SQLite (Uses predictions.db to store patient records from SQLite database in where the data is stored each time as data fetched)")
-st.write(" ")
 st.subheader("🔵 Features")
 st.write("⭐ Parameter (feature) based specific visualization of graphs")
 st.write("⭐ Visualization as 2 graphs (Scatter Plot, Bar Graph)")
@@ -184,7 +182,6 @@ if bt:
         st.warning(f"Low Risk: possible {ab_label}. Abnormal probability: {p_ab:.1f}%")
     else:
         st.error(f"High Risk: likely {ab_label}. Abnormal probability: {p_ab:.1f}%")
-    
     st.markdown("### 🔍 Feature Range Indicators")
     ref_ranges = ref
     val_dict = {"TSH": ts, "T3": t3, "TT4": tt, "T4U": tu, "FTI": ft}
@@ -250,7 +247,6 @@ else:
         plt.setp(ax_sc.get_xticklabels(), rotation=45, ha="right")
         fig_sc.tight_layout()
         st.pyplot(fig_sc)
-
     with col2:
         fig_bar, ax_bar = plt.subplots(figsize=(6, 4))
         ax_bar.bar(range(len(plot_df)), plot_df[param], color="orange")
@@ -267,5 +263,4 @@ else:
             conn.execute("DELETE FROM sqlite_sequence WHERE name='predictions'")
         st.rerun()
 st.divider()
-st.write(" ")
 st.subheader("💻 Developed by Harish.R")
