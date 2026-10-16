@@ -83,7 +83,7 @@ if bt:
     else:
         st.error(f"High Risk: Predicted class is {label}. Confidence: {conf:.1f}%")
 st.divider()
-st.header("📊 Model Performance & Dataset Trends")
+st.subheader("📊 Model Performance & Dataset Trends")
 m1, m2 = st.columns(2)
 m1.metric("Decision Tree Accuracy", f"{acc['Decision Tree']:.1f}%")
 m2.metric("Gradient Boosting Accuracy", f"{acc['Gradient Boosting']:.1f}%")
