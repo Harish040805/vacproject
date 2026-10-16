@@ -72,14 +72,32 @@ def train_models():
     }
     return df, le, gb, acc
 df, le, gb, acc = train_models()
+def meter(val, low, high):
+    if val < low:
+        color = "#2c7bb6"
+    elif val > high:
+        color = "#d7191c"
+    else:
+        color = "#1a9641"
+    pct = min(max(val / (high * 2) * 100, 0), 100)
+    st.sidebar.markdown(
+        f'<div style="background:#e0e0e0;border-radius:6px;height:8px;margin:-8px 0 14px 0;">'
+        f'<div style="width:{pct}%;background:{color};height:8px;border-radius:6px;"></div></div>',
+        unsafe_allow_html=True,
+    )
 st.sidebar.header("Patient Input Features")
 ag = st.sidebar.slider("Patient Age", 1, 120, 20)
 sx = st.sidebar.selectbox("Gender", ["Male", "Female"])
 ts = st.sidebar.slider("Thyroid Stimulating Hormone (TSH)", 0.0, 500.0, 1.0)
+meter(ts, 0.4, 4.0)
 t3 = st.sidebar.slider("Triiodothyronine (T3)", 0.0, 20.0, 2.0)
+meter(t3, 1.2, 3.1)
 tt = st.sidebar.slider("Total Thyroxine (TT4)", 0.0, 500.0, 100.0)
+meter(tt, 64.0, 154.0)
 tu = st.sidebar.slider("Thyroxine Uptake (T4U)", 0.0, 5.0, 1.0)
+meter(tu, 0.74, 1.32)
 ft = st.sidebar.slider("Free Thyroxine Index (FTI)", 0.0, 500.0, 100.0)
+meter(ft, 65.0, 145.0)
 
 def get_slider_color(val, low, high):
     if val < low:
@@ -97,7 +115,9 @@ div[data-baseweb="slider"] div[role="slider"] {{ background-color: {ts_color} !i
 """, unsafe_allow_html=True)
 ot = st.sidebar.selectbox("On Thyroxine", ["False", "True"])
 tsu = st.sidebar.selectbox("Thyroid Surgery", ["False", "True"])
-pr = st.sidebar.selectbox("Pregnant", ["False", "True"])
+pr = st.sidebar.selectbox("Pregnant", ["False", "True"], disabled=(sx == "Male"))
+if sx == "Male":
+    pr = "False"
 bt = st.sidebar.button("Predict Thyroid Risk")
 st.title("🫁 Thyroid Prediction App")
 st.subheader("🔵 Domain: Endocrinology")
@@ -138,8 +158,8 @@ if bt:
     st.markdown("### 🔍 Feature Range Indicators")
     ref_ranges = {
         "TSH": (0.4, 4.0),
-        "T3": (0.8, 2.0),
-        "TT4": (5.0, 12.0),
+        "T3": (1.2, 3.1),
+        "TT4": (64.0, 154.0),
         "T4U": (0.74, 1.32),
         "FTI": (65.0, 145.0)
     }
@@ -148,12 +168,11 @@ if bt:
     for i, (k, v) in enumerate(val_dict.items()):
         low, high = ref_ranges[k]
         if v < low:
-            cols_ind[i].metric(k, v, "Low", delta_color="inverse")
+            cols_ind[i].metric(k, v, "-Low", delta_color="off")
         elif v > high:
-            cols_ind[i].metric(k, v, "High", delta_color="inverse")
+            cols_ind[i].metric(k, v, "+High", delta_color="inverse")
         else:
-            cols_ind[i].metric(k, v, "Normal", delta_color="normal")
-    
+            cols_ind[i].metric(k, v, "Normal", delta_color="off")
     st.dataframe(pd.DataFrame({"Class": le.classes_, "Probability (%)": gb.predict_proba(row)[0] * 100}), use_container_width=True)
 with st.expander("Dataset check"):
     st.write(df[COL["target"]].value_counts())
