@@ -143,7 +143,7 @@ st.write("Use machine learning to estimate a patient's risk of thyroid abnormali
 st.write("⭐ Hosted in Streamlit")
 st.write("⭐ Date using Matplotlib's Date Time")
 st.write("⭐ Input Dataset Fields")
-st.write("•	Age (in years) &nbsp; • Sex/Gender &nbsp; • TSH — Thyroid-Stimulating Hormone &nbsp; • T3 — Triiodo Thyronine Measurement &nbsp; • TT4 — Total Thyroxine &nbsp; • T4U — Thyroxine Uptake Measurement &nbsp; • FTI — Free Thyroxine Index &nbsp; • Pregnant — Pregnancy Indicator")
+st.write("•	Age (in years) &nbsp; • Gender &nbsp; • TSH — Thyroid-Stimulating Hormone &nbsp; • T3 — Triiodo Thyronine Measurement &nbsp; • TT4 — Total Thyroxine &nbsp; • T4U — Thyroxine Uptake Measurement &nbsp; • FTI — Free Thyroxine Index &nbsp; • Pregnant — Pregnancy Indicator")
 st.write(" ")
 st.subheader("🔵 Technology Used")
 st.write("⭐ Algorithms: Decision Tree, Random Forest, SVM (Support Vector Machine), XGBoost (Extra Gradient Boost)")
