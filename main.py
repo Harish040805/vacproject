@@ -55,6 +55,13 @@ def load_records():
     with sqlite3.connect(DB_PATH) as conn:
         return pd.read_sql_query("SELECT * FROM predictions ORDER BY created_at", conn)
 init_db()
+class Ensemble:
+    def __init__(self, models):
+        self.models = models
+    def predict_proba(self, X):
+        return np.mean([m.predict_proba(X) for m in self.models], axis=0)
+    def predict(self, X):
+        return self.predict_proba(X).argmax(axis=1)
 @st.cache_resource
 def train_models():
     df = pd.read_csv("thyroid_dataset.csv")
@@ -85,6 +92,7 @@ def train_models():
         else:
             m.fit(X_tr, y_tr)
         fitted[n] = m
+    fitted["Ensemble"] = Ensemble(list(fitted.values()))
     acc = {n: accuracy_score(y_te, m.predict(X_te)) * 100 for n, m in fitted.items()}
     f1 = {n: f1_score(y_te, m.predict(X_te), average="macro") * 100 for n, m in fitted.items()}
     return df, le, fitted, acc, f1
@@ -102,7 +110,7 @@ def meter(val, low, high):
         f'<div style="width:{pct}%;background:{color};height:8px;border-radius:6px;"></div></div>',
         unsafe_allow_html=True,
     )
-model_name = st.sidebar.selectbox("Algorithm", list(fitted))
+model_name = st.sidebar.selectbox("Algorithm", list(fitted), index=len(fitted) - 1)
 mdl = fitted[model_name]
 rg = {c: (float(df[c].min()), float(df[c].max()), float(df[c].median())) for c in NUM}
 nr = df[df[COL["target"]] == "normal"][["TSH", "T3", "TT4", "T4U", "FTI"]]
@@ -202,7 +210,7 @@ for mc, n in zip(st.columns(len(acc)), acc):
     mc.metric(n, f"Acc {acc[n]:.1f}%", f"Macro F1 {f1[n]:.1f}%", delta_color="off")
 c1, c2 = st.columns(2)
 fig1, ax1 = plt.subplots()
-ax1.bar(list(acc.keys()), list(acc.values()), color=["#92c5de", "#e8867c", "#a6d96a", "#fdae61"])
+ax1.bar(list(acc.keys()), list(acc.values()), color=["#92c5de", "#e8867c", "#a6d96a", "#fdae61", "#8073ac"])
 plt.setp(ax1.get_xticklabels(), rotation=20, ha="right")
 ax1.set_ylim(0, 100)
 ax1.set_ylabel("Accuracy (%)")
