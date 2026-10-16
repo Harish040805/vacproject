@@ -55,8 +55,8 @@ def train_models():
     for c in NUM:
         df[c] = pd.to_numeric(df[c], errors="coerce")
     df = df.dropna()
-    for c, v in BIN.items():
-        df[c] = (df[c] == v).astype(int)
+    for c in BIN:
+        df[c] = df[c].astype(str).str.strip().str.lower().isin(["male", "m", "true", "t", "1", "yes"]).astype(int)
     le = LabelEncoder()
     y = le.fit_transform(df[COL["target"]])
     X = df[FEATURES]
@@ -89,8 +89,9 @@ st.write("⭐ Hosted in Streamlit")
 st.write("⭐ Input Dataset Fields")
 st.write("•	Age (in years) &nbsp; • Sex/Gender &nbsp; • TSH — Thyroid-Stimulating Hormone &nbsp; • T3 — Triiodo Thyronine Measurement &nbsp; • TT4 — Total Thyroxine &nbsp; • T4U — Thyroxine Uptake Measurement &nbsp; • FTI — Free Thyroxine Index &nbsp; • Pregnant — Pregnancy Indicator")
 st.write(" ")
-st.subheader("🔵 Algorithms Used")
-st.write("Decision Tree, Random Forest, SVM, XGBoost")
+st.subheader("🔵 Technology Used")
+st.write("⭐ Algorithms: Decision Tree, Random Forest, SVM (Support Vector Machine), XGBoost (Extra Gradient Boost)")
+st.write("⭐ Database: SQLite")
 st.write(" ")
 st.subheader("🔵 Prediction Results")
 if bt:
@@ -121,8 +122,13 @@ if bt:
 st.divider()
 st.subheader("📊 Model Performance & Dataset Trends")
 st.markdown("### Feature Correlation Heatmap")
-fig, ax = plt.subplots(figsize=(8, 6))
-sns.heatmap(df.select_dtypes(include=['number']).corr(), annot=True, cmap="coolwarm", fmt=".2f", ax=ax)
+corr = df.select_dtypes(include=["number"]).corr()
+mask = np.triu(np.ones_like(corr, dtype=bool), k=1)
+fig, ax = plt.subplots(figsize=(10, 7))
+sns.heatmap(corr, mask=mask, annot=True, fmt=".2f", cmap="vlag", vmin=-1, vmax=1, center=0, square=True, linewidths=1, linecolor="white", annot_kws={"size": 9}, cbar_kws={"shrink": 0.8, "label": "Correlation"}, ax=ax)
+plt.xticks(rotation=45, ha="right")
+plt.yticks(rotation=0)
+fig.tight_layout()
 st.pyplot(fig)
 m1, m2 = st.columns(2)
 m1.metric("Decision Tree Accuracy", f"{acc['Decision Tree']:.1f}%")
