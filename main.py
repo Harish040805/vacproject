@@ -55,18 +55,19 @@ NORMAL_NAMES = ["normal", "negative", "healthy", "n", "-", "0", "no", "false"]
 
 def norm(s):
     return re.sub(r"[^a-z0-9]", "", str(s).lower())
-
-
 def init_db():
+    expected = ["id", "created_at", "age", "gender", "tsh", "t3", "tt4", "t4u", "fti",
+                "on_thyroxine", "thyroid_surgery", "pregnant", "prediction", "confidence"]
     with sqlite3.connect(DB_PATH) as conn:
+        existing = [r[1] for r in conn.execute("PRAGMA table_info(predictions)").fetchall()]
+        if existing and existing != expected:
+            conn.execute("DROP TABLE predictions")
         conn.execute(
             "CREATE TABLE IF NOT EXISTS predictions ("
             "id INTEGER PRIMARY KEY AUTOINCREMENT, "
             "created_at TEXT, age REAL, gender TEXT, tsh REAL, t3 REAL, tt4 REAL, t4u REAL, fti REAL, "
             "on_thyroxine TEXT, thyroid_surgery TEXT, pregnant TEXT, prediction TEXT, confidence REAL)"
         )
-
-
 def save_record(rec):
     with sqlite3.connect(DB_PATH) as conn:
         conn.execute(
