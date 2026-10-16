@@ -73,8 +73,8 @@ def train_models():
     return df, le, gb, acc
 df, le, gb, acc = train_models()
 st.sidebar.header("Patient Input Features")
-ag = st.sidebar.slider("Patient Age", 1, 120, 30)
-sx = st.sidebar.selectbox("Sex", ["Male", "Female"])
+ag = st.sidebar.slider("Patient Age", 1, 120, 20)
+sx = st.sidebar.selectbox("Gender", ["Male", "Female"])
 ts = st.sidebar.slider("Thyroid Stimulating Hormone (TSH)", 0.0, 500.0, 1.0)
 t3 = st.sidebar.slider("Triiodothyronine (T3)", 0.0, 20.0, 2.0)
 tt = st.sidebar.slider("Total Thyroxine (TT4)", 0.0, 500.0, 100.0)
