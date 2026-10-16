@@ -61,6 +61,29 @@ bt = st.sidebar.button("Predict Thyroid Risk")
 st.title("🫁 Thyroid Prediction App")
 st.write("Use machine learning to estimate a patient's risk of thyroid abnormalities.")
 st.divider()
+st.subheader("Prediction Results")
+if bt:
+    vals = {
+        COL["age"]: ag,
+        COL["tsh"]: ts,
+        COL["t3"]: t3,
+        COL["tt4"]: tt,
+        COL["t4u"]: tu,
+        COL["fti"]: ft,
+        COL["sex"]: int(sx == "M"),
+        COL["thyroxine"]: int(ot == "t"),
+        COL["surgery"]: int(tsu == "t"),
+        COL["pregnant"]: int(pr == "t"),
+    }
+    row = pd.DataFrame([vals])[FEATURES]
+    pred = gb.predict(row)[0]
+    label = le.inverse_transform([pred])[0]
+    conf = gb.predict_proba(row)[0].max() * 100
+    if str(label).lower() in ("negative", "normal", "0"):
+        st.success(f"Low Risk: No thyroid abnormality detected. Confidence: {conf:.1f}%")
+    else:
+        st.error(f"High Risk: Predicted class is {label}. Confidence: {conf:.1f}%")
+st.divider()
 st.header("📊 Model Performance & Dataset Trends")
 m1, m2 = st.columns(2)
 m1.metric("Decision Tree Accuracy", f"{acc['Decision Tree']:.1f}%")
@@ -84,29 +107,6 @@ ax2.set_ylabel("TSH")
 ax2.set_title("Age vs. TSH")
 ax2.legend(title="Thyroid Class")
 c2.pyplot(fig2)
-st.divider()
-st.subheader("Prediction Results")
-if bt:
-    vals = {
-        COL["age"]: ag,
-        COL["tsh"]: ts,
-        COL["t3"]: t3,
-        COL["tt4"]: tt,
-        COL["t4u"]: tu,
-        COL["fti"]: ft,
-        COL["sex"]: int(sx == "M"),
-        COL["thyroxine"]: int(ot == "t"),
-        COL["surgery"]: int(tsu == "t"),
-        COL["pregnant"]: int(pr == "t"),
-    }
-    row = pd.DataFrame([vals])[FEATURES]
-    pred = gb.predict(row)[0]
-    label = le.inverse_transform([pred])[0]
-    conf = gb.predict_proba(row)[0].max() * 100
-    if str(label).lower() in ("negative", "normal", "0"):
-        st.success(f"Low Risk: No thyroid abnormality detected. Confidence: {conf:.1f}%")
-    else:
-        st.error(f"High Risk: Predicted class is {label}. Confidence: {conf:.1f}%")
 st.divider()
 st.write(" ")
 st.subheader("💻 Developed by Harish.R")
