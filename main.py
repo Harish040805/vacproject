@@ -122,6 +122,26 @@ if bt:
         st.success(f"✅ Low Risk: No thyroid abnormality detected. Confidence: {conf:.1f}%")
     else:
         st.error(f"⚠️ High Risk: Predicted class is {label}. Confidence: {conf:.1f}%")
+    
+    st.markdown("### 🔍 Feature Range Indicators")
+    ref_ranges = {
+        "TSH": (0.4, 4.0),
+        "T3": (0.8, 2.0),
+        "TT4": (5.0, 12.0),
+        "T4U": (0.74, 1.32),
+        "FTI": (65.0, 145.0)
+    }
+    val_dict = {"TSH": ts, "T3": t3, "TT4": tt, "T4U": tu, "FTI": ft}
+    cols_ind = st.columns(len(val_dict))
+    for i, (k, v) in enumerate(val_dict.items()):
+        low, high = ref_ranges[k]
+        if v < low:
+            cols_ind[i].metric(k, v, "Low", delta_color="inverse")
+        elif v > high:
+            cols_ind[i].metric(k, v, "High", delta_color="inverse")
+        else:
+            cols_ind[i].metric(k, v, "Normal", delta_color="normal")
+    
     st.dataframe(pd.DataFrame({"Class": le.classes_, "Probability (%)": gb.predict_proba(row)[0] * 100}), use_container_width=True)
 with st.expander("Dataset check"):
     st.write(df[COL["target"]].value_counts())
@@ -167,16 +187,25 @@ else:
     hist["created_at"] = pd.to_datetime(hist["created_at"])
     param = st.selectbox("Select parameter to visualize", ["tsh", "t3", "tt4", "t4u", "fti", "age", "confidence"])
     plot_df = hist.tail(15)
-    figh, axh = plt.subplots(figsize=(10, 5))
-    axh.plot(plot_df["created_at"], plot_df[param], marker="o")
-    axh.set_xticks(plot_df["created_at"])
-    axh.set_xlabel("Time")
-    axh.set_ylabel(param.upper())
-    axh.set_title(f"{param.upper()} over time")
-    axh.xaxis.set_major_formatter(mdates.DateFormatter("%d-%m-%Y\n%I:%M:%S %p"))
-    plt.setp(axh.get_xticklabels(), rotation=45, ha="right")
-    figh.tight_layout()
-    st.pyplot(figh)
+    col1, col2 = st.columns(2)
+    with col1:
+        fig_sc, ax_sc = plt.subplots(figsize=(6, 4))
+        ax_sc.scatter(plot_df["created_at"], plot_df[param], color="blue")
+        ax_sc.set_xlabel("Time")
+        ax_sc.set_ylabel(param.upper())
+        ax_sc.set_title(f"{param.upper()} Scatter Plot")
+        plt.setp(ax_sc.get_xticklabels(), rotation=45, ha="right")
+        fig_sc.tight_layout()
+        st.pyplot(fig_sc)
+
+    with col2:
+        fig_bar, ax_bar = plt.subplots(figsize=(6, 4))
+        ax_bar.bar(range(len(plot_df)), plot_df[param], color="orange")
+        ax_bar.set_xlabel("Records")
+        ax_bar.set_ylabel(param.upper())
+        ax_bar.set_title(f"{param.upper()} Bar Graph")
+        fig_bar.tight_layout()
+        st.pyplot(fig_bar)
     st.dataframe(hist.sort_values("created_at", ascending=False), use_container_width=True, column_config={"created_at": st.column_config.DatetimeColumn("Date & Time", format="DD-MM-YYYY hh:mm:ss a")})
     confirm = st.checkbox("Confirm clear all records")
     if st.button("Clear Database", disabled=not confirm):
