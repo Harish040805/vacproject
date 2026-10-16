@@ -79,9 +79,9 @@ if bt:
     label = le.inverse_transform([pred])[0]
     conf = gb.predict_proba(row)[0].max() * 100
     if str(label).lower() in ("negative", "normal", "0"):
-        st.success(f"Low Risk: No thyroid abnormality detected. Confidence: {conf:.1f}%")
+        st.success(f"✅ Low Risk: No thyroid abnormality detected. Confidence: {conf:.1f}%")
     else:
-        st.error(f"High Risk: Predicted class is {label}. Confidence: {conf:.1f}%")
+        st.error(f"⚠️ High Risk: Predicted class is {label}. Confidence: {conf:.1f}%")
 st.divider()
 st.subheader("📊 Model Performance & Dataset Trends")
 m1, m2 = st.columns(2)
