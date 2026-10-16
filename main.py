@@ -193,7 +193,7 @@ if nr.empty:
     nr = df[["TSH", "T3", "TT4", "T4U", "FTI"]]
 ref = {k: (float(nr[k].quantile(0.05)), float(nr[k].quantile(0.95))) for k in nr.columns}
 
-st.sidebar.header("Patient Input Features")
+st.sidebar.header("Patient Input Features (Age range taken from CSV File (24-65))")
 ag = st.sidebar.slider("Patient Age", int(rg["age"][0]), int(rg["age"][1]), int(rg["age"][2]))
 sx = st.sidebar.selectbox("Gender", ["Male", "Female"])
 ts = st.sidebar.slider("Thyroid Stimulating Hormone (TSH)", rg["TSH"][0], rg["TSH"][1], rg["TSH"][2], step=0.1)
